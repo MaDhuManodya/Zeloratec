@@ -1,0 +1,17 @@
+{
+    "Alice": {
+        "Sick Leave": 5,
+        "Annual Leave": 7,
+        "Maternity Leave": 0
+    },
+    "Bob": {
+        "Sick Leave": 8,
+        "Annual Leave": 15,
+        "Maternity Leave": 0
+    },
+    "Charlie": {
+        "Sick Leave": 2,
+        "Annual Leave": 12,
+        "Maternity Leave": 0
+    }
+}
