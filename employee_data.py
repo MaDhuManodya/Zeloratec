@@ -42,7 +42,7 @@ class LeaveManagementSystem:
         """Process natural language input using OpenAI API."""
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4-mini",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "system",
