@@ -235,6 +235,11 @@ def main():
                     "Sick Leave": 2,
                     "Annual Leave": 12,
                     "Maternity Leave": 0
+                },
+                "Eva": {
+                    "Sick Leave": 10,
+                    "Annual Leave": 15,
+                    "Maternity Leave": 0
                 }
             }
             with open("employees.json", 'w') as file:
@@ -247,11 +252,33 @@ def main():
         for leave_type in lms.LEAVE_TYPES:
             print(f"- {leave_type}")
 
-        print("\nPlease enter your name:")
-        employee_name = input().strip()
+        # Add name retry logic with case-insensitive matching
+        max_attempts = 3
+        attempts = 0
+        employee_name = None
 
-        if employee_name not in lms.employees:
-            print(f"Employee {employee_name} not found.")
+        # Create case-insensitive mapping of names
+        name_mapping = {name.lower(): name for name in lms.employees.keys()}
+
+        while attempts < max_attempts:
+            if attempts > 0:
+                remaining = max_attempts - attempts
+                print(f"\nPlease try again. {remaining} {'attempt' if remaining == 1 else 'attempts'} remaining.")
+
+            print("\nPlease enter your name:")
+            entered_name = input().strip()
+
+            # Check for case-insensitive match
+            if entered_name.lower() in name_mapping:
+                employee_name = name_mapping[entered_name.lower()]  # Get the correct case version
+                break
+
+            print(f"Employee {entered_name} not found.")
+            print("Valid employees are: " + ", ".join(lms.employees.keys()))
+            attempts += 1
+
+        if attempts >= max_attempts:
+            print("\nMaximum attempts reached. Please contact your administrator for assistance.")
             return
 
         print(f"Welcome, {employee_name}! How can I assist you with your leave?")
