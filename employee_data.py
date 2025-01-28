@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from dotenv import load_dotenv
 import os
@@ -55,6 +55,29 @@ class LeaveManagementSystem:
             return False, "Invalid date format. Please use YYYY-MM-DD, YYYY.MM.DD, DD-MM-YYYY, DD.MM.YYYY or 'today'"
         except Exception:
             return False, "Invalid date format. Please use YYYY-MM-DD, YYYY.MM.DD, DD-MM-YYYY, DD.MM.YYYY or 'today'"
+
+    def check_leave_overlap(self, employee_name: str, new_start_date: str, days: int) -> bool:
+        """
+        Check if a new leave request overlaps with existing approved leaves.
+        Returns True if there is an overlap, False otherwise.
+        """
+        # Convert new leave dates to datetime objects
+        new_start = datetime.strptime(new_start_date, "%Y-%m-%d")
+        new_end = new_start + timedelta(days=days - 1)  # -1 because start day counts as first day
+
+        # Check against existing approved leaves
+        for leave in self.leave_history[employee_name]:
+            if leave["status"] != "approved":
+                continue
+
+            existing_start = datetime.strptime(leave["start_date"], "%Y-%m-%d")
+            existing_end = existing_start + timedelta(days=leave["days"] - 1)
+
+            # Check for overlap
+            if (new_start <= existing_end and existing_start <= new_end):
+                return True
+
+        return False
 
     def process_natural_language(self, user_input: str, employee_name: str) -> dict:
         """Process natural language input using OpenAI API."""
@@ -201,7 +224,7 @@ class LeaveManagementSystem:
             "\n".join([f"- {lt}: {balance[lt]} days" for lt in balance.keys()])
 
     def request_leave(self, employee_name: str, leave_type: str, days: int, start_date: str) -> str:
-        """Process a leave request."""
+        """Process a leave request with overlap checking."""
         if employee_name not in self.employees:
             return f"Employee {employee_name} not found."
 
@@ -220,6 +243,10 @@ class LeaveManagementSystem:
         current_balance = self.employees[employee_name][leave_type]
         if current_balance < days:
             return f"Insufficient {leave_type} balance. You have {current_balance} days available."
+
+        # Check for overlapping leaves
+        if self.check_leave_overlap(employee_name, start_date, days):
+            return f"Cannot approve leave: You already have approved leave during this period."
 
         # Process leave request
         self.employees[employee_name][leave_type] -= days

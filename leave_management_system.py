@@ -38,6 +38,24 @@ class LeaveManagementSystem:
         # Store leave history
         self.leave_history = {name: [] for name in self.employees.keys()}
 
+    def validate_and_format_date(self, date_str: str) -> tuple[bool, str]:
+        """Validate and format date strings, handling 'today' and various formats."""
+        try:
+            if date_str.lower() == 'today':
+                return True, datetime.now().strftime("%Y-%m-%d")
+
+            # Try various date formats
+            for fmt in ["%Y-%m-%d", "%Y.%m.%d", "%d-%m-%Y", "%d.%m.%Y"]:
+                try:
+                    date_obj = datetime.strptime(date_str, fmt)
+                    return True, date_obj.strftime("%Y-%m-%d")  # Convert to standard format
+                except ValueError:
+                    continue
+
+            return False, "Invalid date format. Please use YYYY-MM-DD, YYYY.MM.DD, DD-MM-YYYY, DD.MM.YYYY or 'today'"
+        except Exception:
+            return False, "Invalid date format. Please use YYYY-MM-DD, YYYY.MM.DD, DD-MM-YYYY, DD.MM.YYYY or 'today'"
+
     def process_natural_language(self, user_input: str, employee_name: str) -> dict:
         """Process natural language input using OpenAI API."""
         try:
@@ -53,6 +71,13 @@ class LeaveManagementSystem:
                         - Sick Leave (includes medical leave, health-related absence, doctor visits)
                         - Annual Leave (includes vacation, holiday, personal time, time off)
                         - Maternity Leave (includes pregnancy leave, parental leave)
+
+                        Date formats accepted:
+                        - "today"
+                        - YYYY-MM-DD
+                        - YYYY.MM.DD
+                        - DD-MM-YYYY
+                        - DD.MM.YYYY
 
                         Extract the following from user queries:
 
@@ -74,20 +99,24 @@ class LeaveManagementSystem:
                         - Intent: "request_leave"
                         - Leave Type: map to one of the three standard types
                         - Days: positive integer
-                        - Start Date: YYYY-MM-DD format
-                        Example: {"intent": "request_leave", "leave_type": "Annual Leave", "days": 3, "start_date": "2024-02-01"}
+                        - Start Date: Parse any supported date format
+                        Examples: 
+                        - "I want 3 days sick leave starting today"
+                        → {"intent": "request_leave", "leave_type": "Sick Leave", "days": 3, "start_date": "today"}
+                        - "Book annual leave for 2 days from 15.01.2024"
+                        → {"intent": "request_leave", "leave_type": "Annual Leave", "days": 2, "start_date": "15.01.2024"}
 
                         3. For cancellations:
                         Extract these fields:
                         - Intent: "cancel_leave"
                         - Leave Type: map to standard type
-                        - Start Date: YYYY-MM-DD format
+                        - Start Date: Parse any supported date format
 
                         Example cancellation requests:
-                        - "Cancel my sick leave for March 15th"
-                        → {"intent": "cancel_leave", "leave_type": "Sick Leave", "start_date": "2024-03-15"}
-                        - "I need to cancel annual leave starting February 1st"
-                        → {"intent": "cancel_leave", "leave_type": "Annual Leave", "start_date": "2024-02-01"}
+                        - "Cancel my sick leave for today"
+                        → {"intent": "cancel_leave", "leave_type": "Sick Leave", "start_date": "today"}
+                        - "Cancel annual leave starting 15.01.2024"
+                        → {"intent": "cancel_leave", "leave_type": "Annual Leave", "start_date": "15.01.2024"}
 
                         4. For viewing history:
                         - Intent: "view_history"
@@ -173,17 +202,17 @@ class LeaveManagementSystem:
 
     def request_leave(self, employee_name: str, leave_type: str, days: int, start_date: str) -> str:
         """Process a leave request."""
-        try:
-            # Validate date format
-            datetime.strptime(start_date, "%Y-%m-%d")
-        except ValueError:
-            return "Invalid date format. Please use YYYY-MM-DD format."
-
         if employee_name not in self.employees:
             return f"Employee {employee_name} not found."
 
         if leave_type not in self.employees[employee_name]:
             return f"Invalid leave type: {leave_type}"
+
+        # Validate and format date
+        is_valid, result = self.validate_and_format_date(start_date)
+        if not is_valid:
+            return result
+        start_date = result
 
         if not isinstance(days, (int, float)) or days <= 0:
             return "Number of days must be a positive number."
@@ -218,31 +247,42 @@ class LeaveManagementSystem:
         if leave_type not in self.LEAVE_TYPES:
             return f"Invalid leave type: {leave_type}"
 
-        try:
-            # Validate date format
-            datetime.strptime(start_date, "%Y-%m-%d")
-        except ValueError:
-            return "Invalid date format. Please use YYYY-MM-DD format."
+        # Validate and format date
+        is_valid, result = self.validate_and_format_date(start_date)
+        if not is_valid:
+            return result
+        start_date = result
 
-        # Find matching leave request in history
-        matching_leaves = [
+        # Find all approved leaves for the employee
+        approved_leaves = [
             (index, leave) for index, leave in enumerate(self.leave_history[employee_name])
-            if leave["type"] == leave_type and
-               leave["start_date"] == start_date and
-               leave["status"] == "approved"
+            if leave["status"] == "approved"
+        ]
+
+        if not approved_leaves:
+            return f"No approved leaves found for {employee_name}"
+
+        # Find matching leave request
+        matching_leaves = [
+            (idx, leave) for idx, leave in approved_leaves
+            if leave["type"] == leave_type and leave["start_date"] == start_date
         ]
 
         if not matching_leaves:
-            return f"No approved {leave_type} found starting on {start_date}"
+            # If no exact match, show available leaves that could be cancelled
+            available_leaves = [
+                f"- {leave['type']} starting {leave['start_date']} ({leave['days']} days)"
+                for _, leave in approved_leaves
+            ]
+
+            return (f"No approved {leave_type} found starting on {start_date}\n"
+                    f"Available leaves that can be cancelled:\n" +
+                    "\n".join(available_leaves))
 
         # Cancel the leave and restore the balance
         index, leave_to_cancel = matching_leaves[0]
         self.employees[employee_name][leave_type] += leave_to_cancel["days"]
-
-        # Update the leave status in history
         self.leave_history[employee_name][index]["status"] = "cancelled"
-
-        # Save the updated state
         self.save_state()
 
         return (f"Successfully cancelled {leave_to_cancel['days']} days of {leave_type} "
