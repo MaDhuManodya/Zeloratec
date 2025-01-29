@@ -317,7 +317,7 @@ class LeaveManagementSystem:
                 f"{self.employees[employee_name][leave_type]} days.")
 
     def view_history(self, employee_name: str) -> str:
-        """View leave history for an employee."""
+        """View leave history for an employee with improved formatting."""
         if employee_name not in self.leave_history:
             return f"No history found for employee: {employee_name}"
 
@@ -325,10 +325,27 @@ class LeaveManagementSystem:
             return f"No leave records found for {employee_name}"
 
         history = self.leave_history[employee_name]
-        response = f"Leave history for {employee_name}:\n"
-        for record in history:
-            response += f"- {record['type']}: {record['days']} days from {record['start_date']} ({record['status']})\n"
-        return response
+
+        # Group leaves by status
+        approved_leaves = [leave for leave in history if leave['status'] == 'approved']
+        cancelled_leaves = [leave for leave in history if leave['status'] == 'cancelled']
+
+        response = [f"Leave history for {employee_name}:"]
+
+        if approved_leaves:
+            response.append("\nApproved Leaves:")
+            for record in approved_leaves:
+                response.append(f"- {record['type']}: {record['days']} days from {record['start_date']}")
+
+        if cancelled_leaves:
+            response.append("\nCancelled Leaves:")
+            for record in cancelled_leaves:
+                response.append(f"- {record['type']}: {record['days']} days from {record['start_date']}")
+
+        if not (approved_leaves or cancelled_leaves):
+            response.append("\nNo leave records found.")
+
+        return "\n".join(response)
 
     def save_state(self):
         """Save the current state of employees back to the JSON file."""
