@@ -69,10 +69,6 @@ To run the application:
 python leave_management_system.py
 ```
 
-## Contact
-
-Your Name - [@yourusername](https://twitter.com/yourusername)
-
 Project Link: [https://github.com/MaDhuManodya/Zeloratec__leave-management-system](https://github.com/MaDhuManodya/Zeloratec__leave-management-system)
 
 ## Acknowledgments
