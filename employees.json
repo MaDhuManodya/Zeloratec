@@ -1,7 +1,7 @@
 {
     "Alice": {
         "Sick Leave": 0,
-        "Annual Leave": 7,
+        "Annual Leave": 6,
         "Maternity Leave": 0
     },
     "Bob": {
@@ -10,33 +10,33 @@
         "Maternity Leave": 0
     },
     "Charlie": {
-        "Sick Leave": 2,
-        "Annual Leave": 12,
+        "Sick Leave": 0,
+        "Annual Leave": 9,
         "Maternity Leave": 0
     },
     "Diana": {
-        "Sick Leave": 1,
-        "Annual Leave": 15,
+        "Sick Leave": 0,
+        "Annual Leave": 14,
         "Maternity Leave": 0
     },
     "Eve": {
         "Sick Leave": 0,
-        "Annual Leave": 10,
+        "Annual Leave": 7,
         "Maternity Leave": 4
     },
     "Frank": {
-        "Sick Leave": 3,
-        "Annual Leave": 8,
+        "Sick Leave": 0,
+        "Annual Leave": 0,
         "Maternity Leave": 0
     },
     "Grace": {
-        "Sick Leave": 6,
-        "Annual Leave": 9,
+        "Sick Leave": 0,
+        "Annual Leave": 3,
         "Maternity Leave": 12
     },
     "Hank": {
-        "Sick Leave": 4,
-        "Annual Leave": 5,
+        "Sick Leave": 0,
+        "Annual Leave": 1,
         "Maternity Leave": 0
     }
 }
